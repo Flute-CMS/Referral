@@ -42,7 +42,9 @@ class ReferralProfileTab extends ProfileTab
     {
         $settings = app(ReferralService::class)->getSettings();
 
-        return $settings['enabled'] && user()->id === $user->id;
+        return ( $settings['enabled'] ?? false )
+            && ( $settings['show_in_profile'] ?? true )
+            && user()->id === $user->id;
     }
 
     public function getContent(User $user)

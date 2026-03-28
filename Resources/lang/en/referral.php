@@ -33,6 +33,7 @@ return [
     'errors' => [
         'invalid_code' => 'The specified referral code was not found',
         'code_inactive' => 'This referral code is no longer active',
+        'referrer_limit' => 'This invite link has reached the maximum number of referrals',
     ],
 
     'stats' => [
@@ -162,7 +163,7 @@ return [
             'referred_bonus' => 'New Player Bonus',
             'referred_bonus_help' => 'Amount the referred player will receive',
             'min_activity_days' => 'Minimum Activity Days',
-            'min_activity_days_help' => 'Number of days the referral must be active to receive reward (0 = immediate)',
+            'min_activity_days_help' => 'Full days after the invited user registered before the referrer reward is paid (0 = immediate). While this is greater than zero, eligibility is rechecked on each request when the invited user is logged in, and when their email is verified.',
             'max_referrals' => 'Max Referrals',
             'max_referrals_help' => 'Maximum referrals per user (0 = unlimited)',
         ],

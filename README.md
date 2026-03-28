@@ -18,7 +18,7 @@ Requires Flute 1.0+.
 
 Download the latest release and install it via the Flute CMS admin panel.
 
-Current version: **1.0.1**
+Current version: **1.0.2**
 
 ## Authors
 

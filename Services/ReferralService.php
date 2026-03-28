@@ -34,6 +34,10 @@ class ReferralService implements ReferralServiceInterface
 
     public function createReferral(User $referrer, User $referred): Referral
     {
+        if ($this->hasReferrerReachedMaxReferrals($referrer, false)) {
+            throw new \RuntimeException('REFERRER_MAX_REFERRALS');
+        }
+
         $referral = new Referral();
         $referral->referrer = $referrer;
         $referral->referred = $referred;
@@ -88,17 +92,29 @@ class ReferralService implements ReferralServiceInterface
         ];
     }
 
-    public function processReferralReward(Referral $referral): void
+    public function processReferralReward(Referral $referral, bool $force = false): bool
     {
-        if ($referral->reward_claimed) {
-            return;
+        $referral = Referral::query()
+            ->where('id', $referral->id)
+            ->load('referrer')
+            ->load('referred')
+            ->fetchOne();
+
+        if (!$referral || $referral->reward_claimed) {
+            return false;
         }
 
         $settings = $this->getSettings();
         $rewardAmount = (float) ( $settings['referrer_reward'] ?? 0 );
 
         if ($rewardAmount <= 0) {
-            return;
+            return false;
+        }
+
+        $minDays = (int) ( $settings['min_activity_days'] ?? 0 );
+
+        if (!$force && $minDays > 0 && !$this->isReferredEligibleForReferrerReward($referral->referred, $minDays)) {
+            return false;
         }
 
         $referrer = $referral->referrer;
@@ -106,6 +122,8 @@ class ReferralService implements ReferralServiceInterface
         $referrer->saveOrFail();
 
         $referral->claimReward($rewardAmount);
+
+        return true;
     }
 
     public function processReferredBonus(User $referred): void
@@ -131,6 +149,46 @@ class ReferralService implements ReferralServiceInterface
         }
     }
 
+    public function hasReferrerReachedMaxReferrals(User $referrer, bool $useCache = true): bool
+    {
+        $max = (int) ( $this->getSettings()['max_referrals_per_user'] ?? 0 );
+
+        if ($max <= 0) {
+            return false;
+        }
+
+        $cacheKey = 'referral.referrer_at_limit.' . $referrer->id;
+
+        if ($useCache && function_exists('cache')) {
+            $cached = cache()->get($cacheKey);
+
+            if ($cached !== null) {
+                return (bool) $cached;
+            }
+        }
+
+        $count = Referral::query()
+            ->where('referrer_id', $referrer->id)
+            ->count();
+
+        $atLimit = $count >= $max;
+
+        if ($useCache && function_exists('cache')) {
+            cache()->set($cacheKey, $atLimit ? 1 : 0, 45);
+        }
+
+        return $atLimit;
+    }
+
+    public function forgetReferrerLimitCache(int $referrerUserId): void
+    {
+        if (!function_exists('cache')) {
+            return;
+        }
+
+        cache()->deleteImmediately('referral.referrer_at_limit.' . $referrerUserId);
+    }
+
     public function getSettings(): array
     {
         return [
@@ -139,6 +197,9 @@ class ReferralService implements ReferralServiceInterface
             'referred_bonus' => (float) config('referral.referred_bonus', 5),
             'auto_reward' => (bool) config('referral.auto_reward', true),
             'min_activity_days' => (int) config('referral.min_activity_days', 0),
+            'show_in_profile' => (bool) config('referral.show_in_profile', true),
+            'allow_self_referral' => (bool) config('referral.allow_self_referral', false),
+            'max_referrals_per_user' => (int) config('referral.max_referrals_per_user', 0),
         ];
     }
 
@@ -451,6 +512,20 @@ class ReferralService implements ReferralServiceInterface
             ],
             'labels' => $labels,
         ];
+    }
+
+    /**
+     * Referrer reward is allowed after the referred user's account has existed for at least N full days (from registration).
+     */
+    private function isReferredEligibleForReferrerReward(User $referred, int $minDays): bool
+    {
+        if ($minDays <= 0) {
+            return true;
+        }
+
+        $deadline = $referred->createdAt->modify('+' . $minDays . ' days');
+
+        return ( new DateTimeImmutable() ) >= $deadline;
     }
 
     private function generateUniqueCode(): string

@@ -53,8 +53,18 @@ class ReferralListener
             return;
         }
 
+        if ($referralService->hasReferrerReachedMaxReferrals($code->user)) {
+            logs('referral')->info("Referrer {$code->user->id} reached referral limit");
+            session()->remove('referral_code');
+
+            return;
+        }
+
         try {
             $referral = $referralService->createReferral($code->user, $user);
+
+            ReferralDeferredRewardListener::forgetDeferredCooldownForUser($user->id);
+            $referralService->forgetReferrerLimitCache($code->user->id);
 
             logs('referral')->info("Referral created: user {$user->id} referred by {$code->user->id}");
 
@@ -62,14 +72,19 @@ class ReferralListener
                 $referralService->processReferredBonus($user);
 
                 if ($settings['auto_reward'] ?? true) {
-                    $referralService->processReferralReward($referral);
-                    logs('referral')->info("Auto reward processed for referral {$referral->id}");
+                    if ($referralService->processReferralReward($referral)) {
+                        logs('referral')->info("Auto reward processed for referral {$referral->id}");
+                    }
                 }
             } else {
                 logs('referral')->info("Referral {$referral->id} pending verification");
             }
         } catch (Exception $e) {
-            logs('referral')->error('Error processing referral: ' . $e->getMessage());
+            if ($e instanceof \RuntimeException && $e->getMessage() === 'REFERRER_MAX_REFERRALS') {
+                logs('referral')->warning('Referral limit reached (concurrent registration)');
+            } else {
+                logs('referral')->error('Error processing referral: ' . $e->getMessage());
+            }
         }
 
         session()->remove('referral_code');

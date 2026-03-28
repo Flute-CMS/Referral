@@ -11,6 +11,7 @@ use Flute\Admin\Platform\Layouts\LayoutFactory;
 use Flute\Admin\Platform\Screen;
 use Flute\Admin\Platform\Support\Color;
 use Flute\Modules\Referral\database\Entities\Referral;
+use Flute\Modules\Referral\Listeners\ReferralDeferredRewardListener;
 use Flute\Modules\Referral\Services\ReferralService;
 
 class ReferralListScreen extends Screen
@@ -30,7 +31,7 @@ class ReferralListScreen extends Screen
         $this->referrals = Referral::query()
             ->load('referrer')
             ->load('referred')
-            ->orderBy('createdAt', 'DESC');
+            ->orderBy('created_at', 'DESC');
     }
 
     public function commandBar(): array
@@ -81,7 +82,7 @@ class ReferralListScreen extends Screen
                     ->width('100px')
                     ->align(TD::ALIGN_CENTER)
                     ->render(static fn(Referral $referral) => $referral->reward_claimed
-                        ? number_format($referral->reward_amount, 2) . ' ' . config('lk.currency_view')
+                        ? number_format($referral->reward_amount, 2) . ' ' . config('lk.currency_view', __('def.currency_symbol'))
                         : '—'),
 
                 TD::make('created_at', __('referral.admin.fields.date'))
@@ -131,6 +132,7 @@ class ReferralListScreen extends Screen
         $referral = Referral::query()
             ->where('id', $id)
             ->load('referrer')
+            ->load('referred')
             ->fetchOne();
 
         if (!$referral) {
@@ -146,7 +148,8 @@ class ReferralListScreen extends Screen
         }
 
         $service = app(ReferralService::class);
-        $service->processReferralReward($referral);
+        $service->processReferralReward($referral, true);
+        ReferralDeferredRewardListener::forgetDeferredCooldownForUser($referral->referred->id);
 
         $this->flashMessage(__('referral.admin.messages.reward_paid'), 'success');
         $this->redirectTo('/admin/referral');
@@ -155,7 +158,11 @@ class ReferralListScreen extends Screen
     public function deleteReferral(): void
     {
         $id = (int) request()->input('id');
-        $referral = Referral::findByPK($id);
+        $referral = Referral::query()
+            ->where('id', $id)
+            ->load('referrer')
+            ->load('referred')
+            ->fetchOne();
 
         if (!$referral) {
             $this->flashMessage(__('referral.admin.messages.not_found'), 'error');
@@ -163,7 +170,13 @@ class ReferralListScreen extends Screen
             return;
         }
 
+        $referredId = $referral->referred->id;
+        $referrerId = $referral->referrer->id;
+
         $referral->delete();
+
+        ReferralDeferredRewardListener::forgetDeferredCooldownForUser($referredId);
+        app(ReferralService::class)->forgetReferrerLimitCache($referrerId);
 
         $this->flashMessage(__('referral.admin.messages.deleted'), 'success');
         $this->redirectTo('/admin/referral');

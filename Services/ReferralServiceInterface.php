@@ -20,7 +20,19 @@ interface ReferralServiceInterface
 
     public function getReferralStats(User $user): array;
 
-    public function processReferralReward(Referral $referral): void;
+    /**
+     * @param bool $force If true, skip min_activity_days (e.g. admin manual payout).
+     *
+     * @return bool True if the referrer was paid; false if skipped or already claimed.
+     */
+    public function processReferralReward(Referral $referral, bool $force = false): bool;
+
+    /**
+     * @param bool $useCache When false, always hit the database (e.g. before creating a referral).
+     */
+    public function hasReferrerReachedMaxReferrals(User $referrer, bool $useCache = true): bool;
+
+    public function forgetReferrerLimitCache(int $referrerUserId): void;
 
     public function getSettings(): array;
 }

@@ -24,8 +24,13 @@ class ReferralController extends BaseController
             return redirect('/');
         }
 
-        $stats = $this->referralService->getReferralStats($user);
         $settings = $this->referralService->getSettings();
+
+        if (!( $settings['enabled'] ?? true )) {
+            return redirect('/');
+        }
+
+        $stats = $this->referralService->getReferralStats($user);
 
         return view('referral::index', [
             'stats' => $stats,
@@ -40,6 +45,10 @@ class ReferralController extends BaseController
 
         if (!$user) {
             return response()->json(['success' => false], 401);
+        }
+
+        if (!( $this->referralService->getSettings()['enabled'] ?? true )) {
+            return response()->json(['success' => false], 403);
         }
 
         $code = $this->referralService->getOrCreateCode($user);
@@ -58,6 +67,10 @@ class ReferralController extends BaseController
 
         if (!$user) {
             return response()->json(['success' => false], 401);
+        }
+
+        if (!( $this->referralService->getSettings()['enabled'] ?? true )) {
+            return response()->json(['success' => false], 403);
         }
 
         $stats = $this->referralService->getReferralStats($user);

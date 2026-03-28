@@ -41,6 +41,12 @@ class ReferralValidationListener
             return;
         }
 
+        if ($referralService->hasReferrerReachedMaxReferrals($code->user)) {
+            $event->addError('referral_code', __('referral.errors.referrer_limit'));
+
+            return;
+        }
+
         if (!session()->has('referral_code')) {
             session()->set('referral_code', $referralCode);
         }

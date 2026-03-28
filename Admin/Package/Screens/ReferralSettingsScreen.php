@@ -8,6 +8,7 @@ use Flute\Admin\Platform\Fields\Toggle;
 use Flute\Admin\Platform\Layouts\LayoutFactory;
 use Flute\Admin\Platform\Screen;
 use Flute\Admin\Platform\Support\Color;
+use Flute\Modules\Referral\Listeners\ReferralDeferredRewardListener;
 
 class ReferralSettingsScreen extends Screen
 {
@@ -121,25 +122,27 @@ class ReferralSettingsScreen extends Screen
     {
         $data = request()->input();
 
+        $config = [
+            'enabled' => isset($data['enabled']),
+            'auto_reward' => isset($data['auto_reward']),
+            'show_in_profile' => isset($data['show_in_profile']),
+            'allow_self_referral' => isset($data['allow_self_referral']),
+            'referrer_reward' => (float) ($data['referrer_reward'] ?? 10),
+            'referred_bonus' => (float) ($data['referred_bonus'] ?? 5),
+            'min_activity_days' => max(0, (int) ($data['min_activity_days'] ?? 0)),
+            'max_referrals_per_user' => max(0, (int) ($data['max_referrals_per_user'] ?? 0)),
+        ];
+
+        $configPath = module_path('Referral', 'Resources/config/referral.php');
+
         try {
-            config()->set('referral.enabled', isset($data['enabled']));
-            config()->set('referral.auto_reward', isset($data['auto_reward']));
-            config()->set('referral.show_in_profile', isset($data['show_in_profile']));
-            config()->set('referral.allow_self_referral', isset($data['allow_self_referral']));
-            config()->set('referral.referrer_reward', (float) ($data['referrer_reward'] ?? 10));
-            config()->set('referral.referred_bonus', (float) ($data['referred_bonus'] ?? 5));
-            config()->set('referral.min_activity_days', (int) ($data['min_activity_days'] ?? 0));
-            config()->set('referral.max_referrals_per_user', (int) ($data['max_referrals_per_user'] ?? 0));
-
-            config()->save();
-
-            if (function_exists('opcache_invalidate')) {
-                opcache_invalidate(path('config/referral.php'), true);
-            }
+            fs()->updateConfig($configPath, $config);
+            config()->set('referral', $config);
+            ReferralDeferredRewardListener::purgeDeferredCooldownCache();
 
             $this->flashMessage(__('referral.admin.messages.settings_saved'), 'success');
         } catch (\Throwable $e) {
-            $this->flashMessage(__('referral.admin.messages.settings_saved') . ': ' . $e->getMessage(), 'error');
+            $this->flashMessage(__('def.server_error') . ': ' . $e->getMessage(), 'error');
         }
 
         $this->redirectTo('/admin/referral/settings', 300);

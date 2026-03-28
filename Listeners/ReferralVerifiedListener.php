@@ -40,8 +40,10 @@ class ReferralVerifiedListener
             logs('referral')->info("Referred bonus processed for verified user {$user->id}");
 
             if ($settings['auto_reward'] ?? true) {
-                $referralService->processReferralReward($referral);
-                logs('referral')->info("Referrer reward processed for referral {$referral->id}");
+                if ($referralService->processReferralReward($referral)) {
+                    logs('referral')->info("Referrer reward processed for referral {$referral->id}");
+                    ReferralDeferredRewardListener::forgetDeferredCooldownForUser($user->id);
+                }
             }
         } catch (Exception $e) {
             logs('referral')->error('Error processing referral on verification: ' . $e->getMessage());

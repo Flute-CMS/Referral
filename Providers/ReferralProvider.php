@@ -2,6 +2,7 @@
 
 namespace Flute\Modules\Referral\Providers;
 
+use Flute\Core\Events\ResponseEvent;
 use Flute\Core\Modules\Auth\Events\RegisterFormRenderingEvent;
 use Flute\Core\Modules\Auth\Events\RegisterValidatingEvent;
 use Flute\Core\Modules\Auth\Events\UserRegisteredEvent;
@@ -11,6 +12,7 @@ use Flute\Core\Support\ModuleServiceProvider;
 use Flute\Modules\Referral\Admin\Package\ReferralAdminPackage;
 use Flute\Modules\Referral\Listeners\ReferralFormListener;
 use Flute\Modules\Referral\Listeners\ReferralListener;
+use Flute\Modules\Referral\Listeners\ReferralDeferredRewardListener;
 use Flute\Modules\Referral\Listeners\ReferralValidationListener;
 use Flute\Modules\Referral\Listeners\ReferralVerifiedListener;
 use Flute\Modules\Referral\Services\ReferralService;
@@ -35,6 +37,10 @@ class ReferralProvider extends ModuleServiceProvider
 
         events()->addListener(UserRegisteredEvent::NAME, [ReferralListener::class, 'handle']);
         events()->addListener(UserVerifiedEvent::NAME, [ReferralVerifiedListener::class, 'handle']);
+
+        if (!is_cli()) {
+            events()->addListener(ResponseEvent::NAME, [ReferralDeferredRewardListener::class, 'handleResponse']);
+        }
         events()->addListener(RegisterFormRenderingEvent::NAME, [ReferralFormListener::class, 'handle']);
         events()->addListener(RegisterValidatingEvent::NAME, [ReferralValidationListener::class, 'handle']);
 
