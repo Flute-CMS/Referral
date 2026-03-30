@@ -85,4 +85,108 @@ class ReferralController extends BaseController
             ],
         ]);
     }
+
+    #[Route('/referral/check-code', name: 'referral.check_code', methods: ['POST'], middleware: ['auth'])]
+    public function checkCode()
+    {
+        $user = user()->getCurrentUser();
+
+        if (!$user) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $code = trim((string) request()->input('code', ''));
+
+        if ($code === '') {
+            return response()->json(['success' => false, 'available' => false]);
+        }
+
+        $available = $this->referralService->isCodeAvailable($code, $user->id);
+
+        return response()->json([
+            'success' => true,
+            'available' => $available,
+        ]);
+    }
+
+    #[Route('/referral/change-code', name: 'referral.change_code', methods: ['POST'], middleware: ['auth'])]
+    public function changeCode()
+    {
+        $user = user()->getCurrentUser();
+
+        if (!$user) {
+            return response()->json(['success' => false], 401);
+        }
+
+        if (!( $this->referralService->getSettings()['enabled'] ?? true )) {
+            return response()->json(['success' => false, 'message' => __('referral.errors.disabled')], 403);
+        }
+
+        $newCode = trim((string) request()->input('code', ''));
+
+        try {
+            $referralCode = $this->referralService->changeCode($user, $newCode);
+
+            return response()->json([
+                'success' => true,
+                'code' => $referralCode->code,
+                'link' => $referralCode->getLink(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            $messageKey = match ($e->getMessage()) {
+                'EMPTY_CODE' => 'referral.errors.empty_code',
+                'INVALID_CODE_FORMAT' => 'referral.errors.invalid_code_format',
+                'CODE_ALREADY_TAKEN' => 'referral.errors.code_taken',
+                default => 'referral.errors.invalid_code',
+            };
+
+            return response()->json([
+                'success' => false,
+                'message' => __($messageKey),
+            ], 422);
+        }
+    }
+
+    #[Route('/referral/use-nickname', name: 'referral.use_nickname', methods: ['POST'], middleware: ['auth'])]
+    public function useNickname()
+    {
+        $user = user()->getCurrentUser();
+
+        if (!$user) {
+            return response()->json(['success' => false], 401);
+        }
+
+        if (!( $this->referralService->getSettings()['enabled'] ?? true )) {
+            return response()->json(['success' => false, 'message' => __('referral.errors.disabled')], 403);
+        }
+
+        $nickname = $user->name;
+
+        if (!preg_match('/^[a-zA-Z0-9_-]{3,32}$/', $nickname)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('referral.errors.nickname_not_suitable'),
+            ], 422);
+        }
+
+        try {
+            $referralCode = $this->referralService->changeCode($user, $nickname);
+
+            return response()->json([
+                'success' => true,
+                'code' => $referralCode->code,
+                'link' => $referralCode->getLink(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            $messageKey = match ($e->getMessage()) {
+                'CODE_ALREADY_TAKEN' => 'referral.errors.code_taken',
+                default => 'referral.errors.invalid_code_format',
+            };
+
+            return response()->json([
+                'success' => false,
+                'message' => __($messageKey),
+            ], 422);
+        }
+    }
 }

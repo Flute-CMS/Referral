@@ -528,6 +528,40 @@ class ReferralService implements ReferralServiceInterface
         return ( new DateTimeImmutable() ) >= $deadline;
     }
 
+    public function isCodeAvailable(string $code, ?int $excludeUserId = null): bool
+    {
+        $query = ReferralCode::query()->where('code', $code);
+
+        if ($excludeUserId !== null) {
+            $query->where('user_id', '!=', $excludeUserId);
+        }
+
+        return $query->count() === 0;
+    }
+
+    public function changeCode(User $user, string $newCode): ReferralCode
+    {
+        $newCode = trim($newCode);
+
+        if ($newCode === '') {
+            throw new \InvalidArgumentException('EMPTY_CODE');
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_-]{3,32}$/', $newCode)) {
+            throw new \InvalidArgumentException('INVALID_CODE_FORMAT');
+        }
+
+        if (!$this->isCodeAvailable($newCode, $user->id)) {
+            throw new \InvalidArgumentException('CODE_ALREADY_TAKEN');
+        }
+
+        $referralCode = $this->getOrCreateCode($user);
+        $referralCode->code = $newCode;
+        $referralCode->saveOrFail();
+
+        return $referralCode;
+    }
+
     private function generateUniqueCode(): string
     {
         do {

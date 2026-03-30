@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Universal copy handler via event delegation on [data-copy]
     document.addEventListener('click', function (e) {
         var trigger = e.target.closest('[data-copy]');
         if (!trigger) return;
@@ -28,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Select all on input click
     var linkInput = document.getElementById('profileReferralLink') || document.getElementById('referralLink');
     if (linkInput) {
         linkInput.addEventListener('click', function () {

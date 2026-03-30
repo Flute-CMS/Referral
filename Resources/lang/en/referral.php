@@ -34,6 +34,11 @@ return [
         'invalid_code' => 'The specified referral code was not found',
         'code_inactive' => 'This referral code is no longer active',
         'referrer_limit' => 'This invite link has reached the maximum number of referrals',
+        'disabled' => 'The referral system is currently disabled',
+        'empty_code' => 'Please enter a referral code',
+        'invalid_code_format' => 'Code must be 3–32 characters: letters, numbers, _ or -',
+        'code_taken' => 'This code is already taken',
+        'nickname_not_suitable' => 'Your nickname cannot be used as a code (must be 3–32 chars, only letters, numbers, _ or -)',
     ],
 
     'stats' => [
@@ -69,6 +74,14 @@ return [
         'description' => 'Invite friends and earn bonuses',
         'link_title' => 'Your Referral Link',
         'your_code' => 'Code',
+        'customize_code' => 'Customize Code',
+        'custom_code_placeholder' => 'Enter your custom code',
+        'use_nickname' => 'Use Nickname',
+        'use_nickname_hint' => 'Set your nickname as your referral code',
+        'code_changed' => 'Code changed successfully!',
+        'code_available' => 'Code is available!',
+        'code_taken' => 'This code is already taken',
+        'invalid_format' => 'Only letters, numbers, _ and - (3–32 chars)',
         'stats' => [
             'total' => 'Total Referrals',
             'claimed' => 'Rewards Paid',

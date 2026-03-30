@@ -123,10 +123,10 @@ class ReferralSettingsScreen extends Screen
         $data = request()->input();
 
         $config = [
-            'enabled' => isset($data['enabled']),
-            'auto_reward' => isset($data['auto_reward']),
-            'show_in_profile' => isset($data['show_in_profile']),
-            'allow_self_referral' => isset($data['allow_self_referral']),
+            'enabled' => filter_var($data['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'auto_reward' => filter_var($data['auto_reward'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'show_in_profile' => filter_var($data['show_in_profile'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'allow_self_referral' => filter_var($data['allow_self_referral'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'referrer_reward' => (float) ($data['referrer_reward'] ?? 10),
             'referred_bonus' => (float) ($data['referred_bonus'] ?? 5),
             'min_activity_days' => max(0, (int) ($data['min_activity_days'] ?? 0)),

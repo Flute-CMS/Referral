@@ -3,29 +3,27 @@
 @endphp
 
 <div class="ref-profile">
-    <div class="ref-profile__link-section">
-        <label class="ref-profile__label" for="profileReferralLink">{{ __('referral.profile.link_title') }}</label>
-        <div class="ref-profile__link-row">
-            <div class="input__field-container ref-profile__link-input">
-                <x-icon path="ph.bold.link-bold" class="input__prefix" />
+    <x-card>
+        <div class="ref-profile__link-block">
+            <div class="ref-profile__link-field">
                 <input type="text"
-                    class="input__field"
+                    class="ref-profile__link-input"
                     id="profileReferralLink"
                     value="{{ $stats['referral_link'] }}"
                     readonly>
+                <button type="button" class="ref-profile__copy-btn" id="profileCopyLinkBtn" data-copy="{{ $stats['referral_link'] }}">
+                    <x-icon path="ph.bold.copy-bold" />
+                    <span>{{ __('referral.link.copy') }}</span>
+                </button>
             </div>
-            <x-button type="primary" size="small" id="profileCopyLinkBtn" data-copy="{{ $stats['referral_link'] }}">
-                <x-icon path="ph.bold.copy-bold" />
-                {{ __('referral.link.copy') }}
-            </x-button>
+            <div class="ref-profile__code-pill" data-copy="{{ $stats['referral_code'] }}" data-tooltip="{{ __('referral.link.copy') }}">
+                <span class="ref-profile__code-label">{{ __('referral.profile.your_code') }}</span>
+                <code class="ref-profile__code-value">{{ $stats['referral_code'] }}</code>
+            </div>
         </div>
-        <div class="ref-profile__code-row">
-            <span class="ref-profile__code-label">{{ __('referral.profile.your_code') }}:</span>
-            <code class="ref-profile__code" data-copy="{{ $stats['referral_code'] }}" data-tooltip="{{ __('referral.link.copy') }}">{{ $stats['referral_code'] }}</code>
-        </div>
-    </div>
+    </x-card>
 
-    <x-metrics>
+    <x-metrics variant="cards">
         <x-metric
             :label="__('referral.profile.stats.total')"
             :value="$stats['total_referrals']"
@@ -44,24 +42,17 @@
             color="warning" />
     </x-metrics>
 
-    <div class="ref-profile__rewards">
-        <div class="ref-profile__reward">
-            <span class="ref-profile__reward-icon ref-profile__reward-icon--accent">
-                <x-icon path="ph.bold.gift-bold" />
-            </span>
-            <div class="ref-profile__reward-body">
-                <span class="ref-profile__reward-label">{{ __('referral.profile.reward_per_invite') }}</span>
-                <span class="ref-profile__reward-value">+{{ number_format($settings['referrer_reward'], 2) }} {{ $currency }}</span>
-            </div>
+    <div class="ref-profile__info-row">
+        <div class="ref-profile__info-item">
+            <x-icon path="ph.bold.gift-bold" />
+            <span class="ref-profile__info-label">{{ __('referral.profile.reward_per_invite') }}</span>
+            <span class="ref-profile__info-value">+{{ number_format($settings['referrer_reward'], 2) }} {{ $currency }}</span>
         </div>
-        <div class="ref-profile__reward">
-            <span class="ref-profile__reward-icon ref-profile__reward-icon--primary">
-                <x-icon path="ph.bold.user-plus-bold" />
-            </span>
-            <div class="ref-profile__reward-body">
-                <span class="ref-profile__reward-label">{{ __('referral.profile.bonus_for_friend') }}</span>
-                <span class="ref-profile__reward-value">+{{ number_format($settings['referred_bonus'], 2) }} {{ $currency }}</span>
-            </div>
+        <div class="ref-profile__info-sep"></div>
+        <div class="ref-profile__info-item">
+            <x-icon path="ph.bold.user-plus-bold" />
+            <span class="ref-profile__info-label">{{ __('referral.profile.bonus_for_friend') }}</span>
+            <span class="ref-profile__info-value">+{{ number_format($settings['referred_bonus'], 2) }} {{ $currency }}</span>
         </div>
     </div>
 
@@ -88,13 +79,13 @@
                             </div>
                         </div>
                         @if ($referral->reward_claimed)
-                            <x-badge type="success" icon="ph.bold.check-bold">
+                            <span class="ref-profile__list-badge ref-profile__list-badge--success">
                                 +{{ number_format($referral->reward_amount, 2) }} {{ $currency }}
-                            </x-badge>
+                            </span>
                         @else
-                            <x-badge type="warning" icon="ph.bold.clock-bold">
+                            <span class="ref-profile__list-badge ref-profile__list-badge--pending">
                                 {{ __('referral.profile.pending') }}
-                            </x-badge>
+                            </span>
                         @endif
                     </div>
                 @endforeach
@@ -102,15 +93,8 @@
         </x-card>
     @else
         <div class="ref-profile__empty">
-            <div class="ref-profile__empty-icon">
-                <x-icon path="ph.bold.users-three-bold" />
-            </div>
-            <h5 class="ref-profile__empty-title">{{ __('referral.profile.no_referrals') }}</h5>
-            <p class="ref-profile__empty-desc">{{ __('referral.profile.share_link') }}</p>
-            <x-button type="outline-accent" size="small" data-copy="{{ $stats['referral_link'] }}">
-                <x-icon path="ph.bold.copy-bold" />
-                {{ __('referral.profile.copy_and_share') }}
-            </x-button>
+            <x-icon path="ph.bold.share-network-bold" />
+            <p>{{ __('referral.profile.share_link') }}</p>
         </div>
     @endif
 </div>

@@ -35,4 +35,8 @@ interface ReferralServiceInterface
     public function forgetReferrerLimitCache(int $referrerUserId): void;
 
     public function getSettings(): array;
+
+    public function isCodeAvailable(string $code, ?int $excludeUserId = null): bool;
+
+    public function changeCode(User $user, string $newCode): ReferralCode;
 }
